@@ -1,0 +1,8 @@
+{
+  "templateName": "All Your Eras",
+  "purpose": "Birthday celebration mini-site",
+  "personalisationNote": "Replace bracketed text, stock photography, sample notes, eras, and demo voice-note labels with the buyer's content.",
+  "birthdayPerson": "[ THEIR NAME ]",
+  "sections": ["Birthday takeover", "Personality field guide", "Era Machine timeline", "Unofficial awards", "People who love you", "Camera roll", "Secret unlock", "Personal letter", "Voice-note finale"],
+  "audio": { "mode": "visual demo only", "note": "Connect a licensed track or supplied audio before publishing. The sample player does not play a recording." }
+}

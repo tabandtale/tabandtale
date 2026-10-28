@@ -1,0 +1,26 @@
+{
+  "title": "Our Little Universe",
+  "note": "Demo content only. Replace memory nodes, names, dates, and photos with the client’s supplied material.",
+  "memories": [
+    {
+      "id": 1,
+      "title": "The day we met"
+    },
+    {
+      "id": 2,
+      "title": "The legendary trip"
+    },
+    {
+      "id": 3,
+      "title": "The 2 a.m. call"
+    },
+    {
+      "id": 4,
+      "title": "The photo evidence"
+    },
+    {
+      "id": 5,
+      "title": "Still choosing us"
+    }
+  ]
+}

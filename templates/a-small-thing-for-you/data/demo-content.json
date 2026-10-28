@@ -1,0 +1,22 @@
+{
+  "title": "A Small Thing for You",
+  "note": "Demo content only. Replace pocket messages, awards, and photographs with client-approved content.",
+  "pockets": [
+    {
+      "id": "01",
+      "title": "A tiny compliment"
+    },
+    {
+      "id": "02",
+      "title": "A memory to keep"
+    },
+    {
+      "id": "03",
+      "title": "A song for the walk home"
+    },
+    {
+      "id": "04",
+      "title": "Open on a hard day"
+    }
+  ]
+}

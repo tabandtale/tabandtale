@@ -1,0 +1,26 @@
+{
+  "title": "The Museum of You",
+  "note": "Demo content only. Replace names, dates, images, wishes, and audio references with the client’s supplied material.",
+  "exhibits": [
+    {
+      "id": "01",
+      "title": "Once upon a tiny human",
+      "year": "CHAPTER 01 · THE EARLY YEARS"
+    },
+    {
+      "id": "02",
+      "title": "A thousand firsts",
+      "year": "CHAPTER 02 · BECOMING"
+    },
+    {
+      "id": "03",
+      "title": "The ones who stayed",
+      "year": "CHAPTER 03 · YOUR PEOPLE"
+    },
+    {
+      "id": "04",
+      "title": "Look at you now",
+      "year": "CHAPTER 04 · THE PRESENT DAY"
+    }
+  ]
+}
