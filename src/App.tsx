@@ -152,7 +152,7 @@ function App() {
         <div className="footer-main">
           <a className="footer-logo-link" href="#top" aria-label="Tab & Tale home"><img src={logoUrl} alt="Tab & Tale" className="footer-logo" /></a>
           <div className="footer-tagline-block"><p className="footer-tagline">Little worlds, thoughtfully made.</p><p className="footer-description">Websites for big ideas, little celebrations, and everything in between.</p></div>
-          <div className="footer-links"><span className="footer-label">FIND YOUR WAY</span><a href="#top">About</a><a href="#paths">What we make</a><a href="#windows">Tiny previews</a></div>
+          <div className="footer-links"><span className="footer-label">FIND YOUR WAY</span><a href="#top">About</a><a href="#paths">What we make</a><a href="/professional">For your brand</a><a href="/personal">For your loved ones</a></div>
           <div className="footer-links"><span className="footer-label">SAY HELLO</span><a href={contactConfig.instagramDmUrl} target="_blank" rel="noopener noreferrer">Instagram ↗</a><a href={contactConfig.linkedInUrl} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a><button onClick={() => { setContactPreference(null); setContactOpen(true) }}>Contact options ↗</button></div>
         </div>
         <div className="footer-bottom"><span>EST. 2026</span><span>© {new Date().getFullYear()} Tab & Tale. Made with care.</span><a href="#top">Back to the top ↑</a></div>

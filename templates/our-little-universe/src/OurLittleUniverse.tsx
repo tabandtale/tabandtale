@@ -1,28 +1,382 @@
-import { useState } from 'react'
-import { ArrowDownRight, ArrowUpRight, Headphones, X } from 'lucide-react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Menu, Play, SkipBack, SkipForward, X } from 'lucide-react'
 import '../styles/universe.css'
+import { universeData, type UniverseMemory } from './universeData'
 
-const memories = [
-  { id: 1, x: 18, y: 24, title: 'The day we met', date: 'SEPTEMBER, SOMEHOW FOREVER AGO', note: 'Neither of us knew this would turn into the friendship that has its own language, lore, and absolutely no normal conversations.', color: 'coral' },
-  { id: 2, x: 48, y: 16, title: 'The legendary trip', date: 'THE GREAT ADVENTURE', note: 'One questionable itinerary, twelve thousand photos, and a memory we will bring up at every possible opportunity.', color: 'yellow' },
-  { id: 3, x: 72, y: 34, title: 'The 2 a.m. call', date: 'NO CONTEXT REQUIRED', note: 'The kind of conversation that starts with “you will not believe this” and ends when the birds start making noise.', color: 'blue' },
-  { id: 4, x: 32, y: 61, title: 'The photo evidence', date: 'CAMERA ROLL CLASSIFIED', note: 'Some photographs are art. Some are evidence. Ours are somehow both.', color: 'pink' },
-  { id: 5, x: 68, y: 72, title: 'Still choosing us', date: 'PRESENT DAY, SAME NONSENSE', note: 'Through every new chapter, different cities, and changing versions of ourselves: still my person.', color: 'green' },
+let openingFindingDone = false
+
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+const nav = [
+  { href: '#olu-top', label: 'The universe' },
+  { href: '#olu-stars', label: 'The memories' },
+  { href: '#olu-evidence', label: 'The evidence' },
+  { href: '#olu-awards', label: 'The awards' },
+  { href: '#olu-audio', label: 'The soundtrack' },
 ]
-const awards = [['THE VOICE NOTE PODCASTER','For sending a 7-minute audio that could have been one sentence.'],['CHAOS COORDINATOR','For making every plan more interesting than it needed to be.'],['EMOTIONAL SUPPORT CLOWN','For making me laugh exactly when I needed it.']]
+
+function StarMark() {
+  return (
+    <svg className="olu-star" viewBox="0 0 40 40" aria-hidden="true">
+      <path d="M20 2 23 16 38 20 23 24 20 38 17 24 2 20 17 16Z" fill="currentColor" />
+    </svg>
+  )
+}
+
+function PinMark({ color }: { color: string }) {
+  return (
+    <svg className={`olu-pin olu-pin-${color}`} viewBox="0 0 36 48" aria-hidden="true">
+      <path d="M18 46s14-16 14-28A14 14 0 1 0 4 18c0 12 14 28 14 28Z" />
+      <circle cx="18" cy="17" r="5.5" fill="#fff" />
+    </svg>
+  )
+}
+
+function SealMark() {
+  return (
+    <svg className="olu-seal" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="30" fill="#3d7a45" />
+      <circle cx="32" cy="32" r="22" fill="none" stroke="#f5e6a3" strokeWidth="1.4" />
+      <path d="M32 18 35 28 46 32 35 36 32 46 29 36 18 32 29 28Z" fill="#f5e6a3" />
+    </svg>
+  )
+}
+
+const findings = [
+  'New evidence of nonsense discovered.',
+  'Friendship status: suspiciously strong.',
+  'Research confirms: still each other’s favourite problem.',
+  'Official finding: absolutely no common sense detected.',
+]
+
 export function OurLittleUniverse() {
-  const [active, setActive] = useState<(typeof memories)[number] | null>(null)
-  const [award, setAward] = useState<number | null>(null)
-  const [noteOpen, setNoteOpen] = useState(false)
-  const [audioOpen, setAudioOpen] = useState(false)
-  return <main className="universe-template">
-    <nav className="universe-nav"><a href="/personal" className="universe-logo">OLU<span> / FRIENDSHIP FILES</span></a><span>EST. THE DAY WE MET</span><a href="/personal">EXIT OUR UNIVERSE ↗</a></nav>
-    <section className="universe-hero"><div className="universe-sticker">OFFICIAL<br/>BESTIE<br/>ARCHIVE ✳</div><p className="universe-eyebrow">A VERY UNOFFICIAL DOCUMENTATION OF US</p><h1>Our little<br/><em>universe.</em></h1><p className="universe-hero-text">A collection of questionable decisions, elite memories, and the person who somehow makes all of it make sense.</p><a href="#constellation" className="universe-start">ENTER THE LORE <ArrowDownRight size={18}/></a><div className="universe-hero-photo"><img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1000&q=85" alt="Friends spending time together" /><span>FIG. A — THE ORIGINAL SUSPECTS</span></div><span className="universe-doodle universe-doodle-one">besties 4ever</span><span className="universe-doodle universe-doodle-two">★ ★ ★</span></section>
-    <section className="universe-map-section" id="constellation"><div className="universe-section-head"><span>01 / MEMORY CONSTELLATION</span><p>Tap a star. Open the lore. No context will be provided.</p></div><h2>Somewhere in<br/>the <em>stars.</em></h2><div className="universe-map"><svg className="universe-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M18 24 L48 16 L72 34 L68 72 L32 61 L18 24 M48 16 L32 61 M72 34 L32 61" /></svg>{memories.map(m => <button key={m.id} className={`universe-star star-${m.color}`} style={{left:`${m.x}%`,top:`${m.y}%`}} onClick={() => setActive(m)} aria-label={`Open memory: ${m.title}`}><span>✦</span><small>{m.title}</small></button>)}<span className="universe-map-note">OUR SHARED<br/>GALAXY, APPROX.</span></div><p className="universe-map-hint">✳ Choose any star to unlock a memory</p></section>
-    <section className="universe-contact-sheet"><div className="universe-section-head"><span>02 / THE CAMERA ROLL</span><p>Definitely not the photos we said we would delete.</p></div><h2>Evidence of<br/><em>the nonsense.</em></h2><div className="universe-photos"><figure className="u-photo u-photo-tall"><img src="https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=900&q=85" alt="Friends celebrating together"/><figcaption>01 — OUTSIDE, TOGETHER, SOMEHOW</figcaption></figure><figure className="u-photo u-photo-tilt"><img src="https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=900&q=85" alt="Friends sharing a meal"/><figcaption>02 — THE FOOD WAS A SIDE QUEST</figcaption></figure><figure className="u-photo u-photo-wide"><img src="https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=900&q=85" alt="Friends laughing together"/><figcaption>03 — LAUGHING AT OUR OWN JOKES</figcaption></figure></div></section>
-    <section className="universe-awards"><div className="universe-section-head"><span>03 / AWARDS WE MADE UP</span><p>Peer reviewed by exactly one (1) best friend.</p></div><h2>Extremely official.<br/><em>Zero credentials.</em></h2><div className="universe-award-list">{awards.map(([title,desc],i)=><button key={title} className={`universe-award award-${i+1}`} onClick={()=>setAward(award===i?null:i)}><span>0{i+1}</span><b>{title}</b><span className="universe-award-icon">{['✳','★','✷'][i]}</span>{award===i && <p>{desc}</p>}<small>{award===i?'CLOSE −':'READ THE CITATION +'}</small></button>)}</div></section>
-    <section className="universe-messages"><div><span className="universe-section-head">04 / A NOTE FROM YOUR PERSON</span><h2>In case you<br/>forgot, <em>I pick you.</em></h2><p>Even when you steal my fries, send the most chaotic voice notes, or say “quick question” and change my entire afternoon.</p><button className="universe-note-button" onClick={()=>setNoteOpen(v=>!v)}>{noteOpen?'FOLD THE NOTE UP':'OPEN YOUR NOTE'} <ArrowUpRight size={17}/></button>{noteOpen && <blockquote className="universe-open-note">“You are the family I got to choose. Thank you for being in every version of my life.”<small>— YOUR FAVOURITE PERSON, PROBABLY</small></blockquote>}</div><button className="universe-audio-card" onClick={()=>setAudioOpen(v=>!v)}><span className="u-audio-icon"><Headphones/></span><b>{audioOpen?'AUDIO NOTE SELECTED':'AUDIO NOTE FROM YOUR BESTIE'}</b><small>{audioOpen?'Demo mode — add your real recording to the data folder.':'Tap to see the voice-note moment'}</small><span>{audioOpen?'Ⅱ':'▶ PLAY'}</span></button></section>
-    <footer className="universe-footer"><span>END OF FILE 001</span><h2>Same stars.<br/><em>New stories.</em></h2><p>Here is to all the memories we have not made yet.</p><a href="/personal">BACK TO THE STUDIO ↗</a></footer>
-    {active && <div className="universe-modal" role="dialog" aria-modal="true" aria-labelledby="universe-modal-title" onMouseDown={e=>{if(e.target===e.currentTarget)setActive(null)}}><article className={`universe-memory-card memory-${active.color}`}><button onClick={()=>setActive(null)} aria-label="Close memory"><X/></button><span>MEMORY NO. 0{active.id} · {active.date}</span><div className="universe-memory-star">✦</div><h2 id="universe-modal-title">{active.title}</h2><p>{active.note}</p><small>FILED UNDER: US BEING US</small></article></div>}
-  </main>
+  const data = universeData
+  const [stuck, setStuck] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [active, setActive] = useState<UniverseMemory>(data.memories[0])
+  const [openAward, setOpenAward] = useState<string | null>(null)
+  const [secret, setSecret] = useState(false)
+  const [stamped, setStamped] = useState(false)
+  const [awardStamp, setAwardStamp] = useState(false)
+  const [finding, setFinding] = useState<string | null>(null)
+  const [shower, setShower] = useState(false)
+  const [burst, setBurst] = useState(false)
+  const [starNote, setStarNote] = useState<string | null>(null)
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
+  const lightboxCloseRef = useRef<HTMLButtonElement>(null)
+  const findingTimer = useRef(0)
+  const endFindingDone = useRef(false)
+  const mapFindingDone = useRef(false)
+  const hasAudio = Boolean(data.audioSrc)
+
+  const showFinding = (index: number) => {
+    window.clearTimeout(findingTimer.current)
+    setFinding(findings[index % findings.length])
+    findingTimer.current = window.setTimeout(() => setFinding(null), 4200)
+  }
+
+  const pickMemory = (memory: UniverseMemory) => {
+    setActive(memory)
+    setBurst(true)
+    window.setTimeout(() => setBurst(false), 700)
+    if (!mapFindingDone.current) {
+      mapFindingDone.current = true
+      showFinding(1)
+    }
+  }
+
+  const scrollTo = (id: string) => {
+    setMenuOpen(false)
+    document.getElementById(id)?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+  }
+
+  useEffect(() => {
+    document.title = `Our Little Universe — ${data.names}`
+    const nodes = document.querySelectorAll('.olu-in')
+    if (prefersReducedMotion()) {
+      nodes.forEach(node => node.classList.add('is-in'))
+      return
+    }
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return
+        entry.target.classList.add('is-in')
+        if (entry.target.id === 'olu-end' && !endFindingDone.current) {
+          endFindingDone.current = true
+          setShower(true)
+          showFinding(2)
+        }
+      })
+    }, { threshold: 0.12 })
+    nodes.forEach(node => observer.observe(node))
+    return () => observer.disconnect()
+  }, [data.names])
+
+  useEffect(() => {
+    const onScroll = () => setStuck(window.scrollY > 24)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    const overlayOpen = Boolean(lightbox) || menuOpen
+    document.body.style.overflow = overlayOpen ? 'hidden' : ''
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setLightbox(null)
+      setMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [lightbox, menuOpen])
+
+  useEffect(() => {
+    if (lightbox) lightboxCloseRef.current?.focus()
+  }, [lightbox])
+
+  useEffect(() => {
+    if (prefersReducedMotion() || openingFindingDone) return
+    openingFindingDone = true
+    const start = window.setTimeout(() => showFinding(0), 1600)
+    return () => {
+      window.clearTimeout(start)
+      window.clearTimeout(findingTimer.current)
+    }
+  }, [])
+
+  return (
+    <main className="our-little-universe">
+      <div className="olu-sky" aria-hidden="true">
+        <i className="olu-float-star olu-float-star-0" />
+        <i className="olu-float-star olu-float-star-1" />
+        <i className="olu-float-star olu-float-star-2" />
+        <i className="olu-mini-planet" />
+        <i className="olu-shoot" />
+        <i className="olu-ufo" />
+        <i className="olu-smile" />
+      </div>
+      {shower && (
+        <div className="olu-shower" aria-hidden="true">
+          {Array.from({ length: 16 }, (_, i) => <i key={i} style={{ left: `${6 + i * 6}%`, animationDelay: `${i * 0.08}s` } as CSSProperties} />)}
+        </div>
+      )}
+      {finding && (
+        <aside className="olu-finding" role="status">
+          <p>{finding}</p>
+          <button type="button" onClick={() => setFinding(null)}>File it</button>
+        </aside>
+      )}
+      <a className="olu-skip" href="#olu-stars">Skip to the memories</a>
+
+      <header className={`olu-header ${stuck ? 'is-stuck' : ''} ${menuOpen ? 'is-open' : ''}`}>
+        <a className="olu-wordmark" href="#olu-top" onClick={event => { event.preventDefault(); scrollTo('olu-top') }}>
+          Our little <em>universe</em>
+        </a>
+        <span className="olu-header-mark" aria-hidden="true"><StarMark /></span>
+        <button className="olu-menu" type="button" aria-expanded={menuOpen} aria-controls="olu-nav" aria-label={menuOpen ? 'Close menu' : 'Open menu'} onClick={() => setMenuOpen(v => !v)}>
+          {menuOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+        <nav id="olu-nav" className={menuOpen ? 'is-open' : ''} aria-label="Friendship sections">
+          {nav.map(item => (
+            <a key={item.href} href={item.href} onClick={event => { event.preventDefault(); scrollTo(item.href.slice(1)) }}>{item.label}</a>
+          ))}
+          <button type="button" className="olu-header-cta" onClick={() => scrollTo('olu-evidence')}>Explore the evidence</button>
+        </nav>
+      </header>
+
+      <section className="olu-hero" id="olu-top" aria-labelledby="olu-hero-title">
+        <div className="olu-hero-copy">
+          <p className="olu-kicker">{data.kicker}</p>
+          <h1 id="olu-hero-title">Our little <em>universe.</em></h1>
+          <p className="olu-lede">{data.lede}</p>
+          <button type="button" className="olu-cta" onClick={() => scrollTo('olu-stars')}>Enter our universe ↗</button>
+        </div>
+        <figure className="olu-hero-art">
+          <div className="olu-hero-photo-frame">
+            <img
+              className="olu-hero-photo"
+              src="/templates/our-little-universe/hero-friends.jpg"
+              alt="Friends with their arms around one another, sharing a quiet moment by the sea"
+              loading="eager"
+            />
+            <span className="olu-photo-orbit" aria-hidden="true" />
+          </div>
+          <figcaption className="olu-hand">fig. 01 — the whole plot</figcaption>
+        </figure>
+      </section>
+
+      <section className="olu-stars olu-in" id="olu-stars">
+        <div className="olu-stars-copy">
+          <p className="olu-kicker">01 / Field notes</p>
+          <h2>Somewhere in <em>the stars.</em></h2>
+          <p className="olu-lede">{data.mapNote}</p>
+        </div>
+        <div className="olu-map" role="list">
+          <svg className="olu-path" viewBox="0 0 100 80" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M12 30 C22 12, 38 14, 48 28 S68 18, 78 24 S86 58, 72 66 S42 70, 36 54 S18 50, 12 30" />
+          </svg>
+          {data.memories.map(memory => (
+            <button
+              key={memory.id}
+              type="button"
+              role="listitem"
+              className={`olu-marker ${active.id === memory.id ? 'is-on' : ''} ${burst && active.id === memory.id ? 'is-burst' : ''}`}
+              style={{ left: memory.x, top: memory.y } as CSSProperties}
+              aria-pressed={active.id === memory.id}
+              onClick={() => pickMemory(memory)}
+            >
+              <PinMark color={memory.color} />
+              <span>{memory.title}</span>
+            </button>
+          ))}
+        </div>
+        <article className="olu-memory" aria-live="polite">
+          <button type="button" className="olu-memory-photo" onClick={() => setLightbox({ src: active.image, alt: active.title })}>
+            <img src={active.image} alt="" />
+          </button>
+          <div>
+            <p className="olu-kicker">{active.date}</p>
+            <h3>{active.title}</h3>
+            <p className="olu-hand">{active.place}</p>
+            <p>{active.story}</p>
+          </div>
+        </article>
+      </section>
+
+      <section className="olu-evidence olu-in" id="olu-evidence">
+        <p className="olu-kicker">02 / The camera roll</p>
+        <h2>Evidence of <em>the nonsense.</em></h2>
+        <p className="olu-lede">{data.evidenceIntro}</p>
+        <div className="olu-photos">
+          {data.evidence.map((item, index) => (
+            <figure className={`olu-photo olu-photo-${index}`} key={item.label}>
+              <button type="button" onClick={() => setLightbox({ src: item.image, alt: item.alt })}>
+                <img src={item.image} alt={item.alt} loading="lazy" />
+              </button>
+              <figcaption>
+                <b>{item.label}</b>
+                <span>{item.caption}</span>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+
+      <section className="olu-awards olu-in" id="olu-awards">
+        <h2>Extremely official. <em>Zero credentials.</em></h2>
+        <div className="olu-award-row">
+          {data.awards.map(award => {
+            const open = openAward === award.id
+            return (
+              <article className={`olu-award ${open ? 'is-open' : ''}`} key={award.id}>
+                <SealMark />
+                <p className="olu-kicker">{award.id}</p>
+                <h3>{award.title}</h3>
+                <p>{award.citation}</p>
+                {open && <p className="olu-hand">{award.extra}</p>}
+                {open && awardStamp && <span className="olu-approved">Approved, unofficially</span>}
+                <button type="button" onClick={() => {
+                  setOpenAward(open ? null : award.id)
+                  if (!open) {
+                    setAwardStamp(true)
+                    showFinding(3)
+                  }
+                }}>
+                  {open ? 'Close the file' : 'Read more'}
+                </button>
+              </article>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="olu-audio olu-in" id="olu-audio">
+        <div className="olu-audio-copy">
+          <p className="olu-kicker">04 / The soundtrack</p>
+          <h2>In case you forgot, <em>I pick you.</em></h2>
+          <p className="olu-lede">{data.pickYouBody}</p>
+        </div>
+        <div className="olu-player">
+          <p className="olu-kicker">{data.audioSender}</p>
+          <strong>{data.audioTitle}</strong>
+          <p className="olu-hand">{data.audioCaption}</p>
+          <div className="olu-wave" aria-hidden="true">
+            {Array.from({ length: 28 }, (_, i) => (
+              <b key={i} style={{ '--olu-h': `${8 + ((i * 11) % 22)}px` } as CSSProperties} />
+            ))}
+          </div>
+          <div className="olu-progress" aria-hidden="true"><span /></div>
+          <div className="olu-controls">
+            <button type="button" disabled aria-label="Previous, unavailable until audio is added"><SkipBack size={16} /></button>
+            <button type="button" disabled aria-label={hasAudio ? `Play ${data.audioTitle}` : 'Sample audio player, recording not added yet'}>
+              <Play size={18} />
+            </button>
+            <button type="button" disabled aria-label="Next, unavailable until audio is added"><SkipForward size={16} /></button>
+          </div>
+          <small>{hasAudio ? 'Ready to play' : 'Sample player — add an audio file to make this play'}</small>
+        </div>
+      </section>
+
+      <section className="olu-end olu-in" id="olu-end">
+        <h2>Same stars. <em>New stories.</em></h2>
+        <p className="olu-lede">{data.closingLine}</p>
+        <div className="olu-end-visual">
+          <div className="olu-constellation">
+            {Array.from({ length: 8 }, (_, i) => <span key={i} aria-hidden="true"><StarMark /></span>)}
+            <button type="button" className="olu-star-hit" onClick={() => setStarNote('Filed: the time we got lost on purpose.')} aria-label="A classified star">
+              <StarMark />
+            </button>
+            <button type="button" className="olu-star-hit" onClick={() => setStarNote('Exhibit B: still laughing about it.')} aria-label="Another classified star">
+              <StarMark />
+            </button>
+          </div>
+          {starNote && <p className="olu-hand olu-star-note" role="status">{starNote}</p>}
+          <div className="olu-end-photos">
+            {data.closingPhotos.map(photo => (
+              <figure key={photo.src}>
+                <button type="button" onClick={() => setLightbox({ src: photo.src, alt: photo.alt })}>
+                  <img src={photo.src} alt={photo.alt} loading="lazy" />
+                </button>
+                <figcaption>{photo.caption}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+        <p className="olu-hand">{data.closingNote}</p>
+        <button type="button" className={`olu-stamp ${stamped ? 'is-on' : ''}`} onClick={() => setStamped(v => !v)}>
+          {stamped ? 'Approved, unofficially' : 'Stamp this file'}
+        </button>
+        <button type="button" className="olu-secret" onClick={() => setSecret(v => !v)}>
+          {secret ? data.secret : 'A classified P.S.'}
+        </button>
+      </section>
+
+      <footer className="olu-footer">
+        <a className="olu-wordmark" href="#olu-top" onClick={event => { event.preventDefault(); scrollTo('olu-top') }}>
+          Our little <em>universe</em>
+        </a>
+        <p>Officially unofficial. Permanently important.</p>
+        <nav aria-label="Footer">
+          {nav.map(item => (
+            <a key={item.href} href={item.href} onClick={event => { event.preventDefault(); scrollTo(item.href.slice(1)) }}>{item.label}</a>
+          ))}
+        </nav>
+        <button type="button" onClick={() => scrollTo('olu-top')}>Back to the beginning</button>
+        <small>A little world by Tab & Tale</small>
+      </footer>
+
+      {lightbox && (
+        <div className="olu-overlay" role="dialog" aria-modal="true" aria-label={lightbox.alt} onMouseDown={event => { if (event.target === event.currentTarget) setLightbox(null) }}>
+          <button type="button" className="olu-close" ref={lightboxCloseRef} onClick={() => setLightbox(null)}>Close</button>
+          <img src={lightbox.src} alt={lightbox.alt} />
+        </div>
+      )}
+    </main>
+  )
 }

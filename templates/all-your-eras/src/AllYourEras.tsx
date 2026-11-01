@@ -1,98 +1,767 @@
-import { useEffect, useState, type CSSProperties } from 'react'
-import { ArrowDown, ArrowLeft, ArrowRight, AudioLines, Cake, Camera, ChevronDown, Heart, LockKeyhole, Play, Pause, Sparkles, Volume2, X } from 'lucide-react'
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
+import { Menu, Pause, Play, X } from 'lucide-react'
 import '../styles/all-your-eras.css'
+import { birthdayData, type VoiceNote } from './birthdayData'
 
-type Note = { name: string; relation: string; message: string; color: string }
-type Era = { number: string; title: string; subtitle: string; copy: string; year: string; image: string; sticker: string; color: string }
+let openingBurstDone = false
 
-const eras: Era[] = [
-  { number: '01', title: 'tiny human', subtitle: 'The origin story', copy: 'Small shoes. Huge opinions. Absolutely no idea how iconic this little person would become.', year: 'THE BEGINNING', image: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=1000&q=85', sticker: 'BABY ICON', color: 'pink' },
-  { number: '02', title: 'school survival', subtitle: 'The lore gets deeper', copy: 'Questionable hair. Unmatched confidence. Stories that are legally not allowed to be forgotten.', year: 'THE SCHOOL YEARS', image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1000&q=85', sticker: 'CORE MEMORY', color: 'yellow' },
-  { number: '03', title: 'the plot twist', subtitle: 'Character development!!', copy: 'New people, new places, a few dramatic plotlines and the slow discovery of who you wanted to be.', year: 'THE PLOT THICKENS', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1000&q=85', sticker: 'LORE DROP', color: 'blue' },
-  { number: '04', title: 'main character', subtitle: 'Currently iconic', copy: 'A little wiser, a lot more yourself, still collecting stories and making ordinary days feel like something.', year: 'RIGHT NOW', image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1000&q=85', sticker: 'IT PERSON', color: 'purple' },
-  { number: '05', title: 'to be continued…', subtitle: 'Your next favourite chapter', copy: 'More places to go. More people to love. More versions of you that you have not even met yet.', year: 'COMING SOON', image: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=1000&q=85', sticker: 'THE FUTURE IS YOURS', color: 'green' },
-]
-
-const notes: Note[] = [
-  { name: 'Riya', relation: 'partner in crime', message: 'You make every boring thing 10x funnier just by being there. Never stop being your ridiculous, wonderful self. Love you loads.', color: 'note-lilac' },
-  { name: 'Your favourite sibling', relation: 'professional menace', message: 'I would roast you right now but apparently this is a wholesome website. Happy birthday, loser. You are my favourite human. Do not tell anyone.', color: 'note-yellow' },
-  { name: 'Mum & Dad', relation: 'your original fan club', message: 'Watching you become the person you are today has been the greatest gift. We are proud of you in more ways than you know.', color: 'note-pink' },
-]
-
-const photos = [
-  { src: 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=700&q=85', caption: 'the night that became a story', tilt: '-4deg' },
-  { src: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=700&q=85', caption: 'proof we went outside', tilt: '3deg' },
-  { src: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=700&q=85', caption: 'favourite people, probably', tilt: '-2deg' },
-  { src: 'https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=700&q=85', caption: 'no context. just vibes.', tilt: '5deg' },
-  { src: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=700&q=85', caption: 'one for the group chat', tilt: '-3deg' },
-  { src: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=700&q=85', caption: 'a tiny slice of everything', tilt: '2deg' },
-]
-
-const confettiBits = Array.from({ length: 42 }, (_, i) => ({ left: `${(i * 37) % 100}%`, delay: `${(i % 13) * 0.055}s`, rotate: `${(i * 29) % 180}deg`, kind: i % 4 }))
-
-function ConfettiBurst({ on }: { on: boolean }) {
-  if (!on) return null
-  return <div className="aye-confetti" aria-hidden="true">{confettiBits.map((bit, i) => <i key={i} className={`confetti-bit confetti-${bit.kind}`} style={{ left: bit.left, animationDelay: bit.delay, rotate: bit.rotate }} />)}</div>
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-function AllYourEras() {
-  const [entered, setEntered] = useState(false)
-  const [confetti, setConfetti] = useState(true)
-  const [openedNotes, setOpenedNotes] = useState<number[]>([])
-  const [awardRevealed, setAwardRevealed] = useState(false)
-  const [secretUnlocked, setSecretUnlocked] = useState(false)
-  const [letterOpen, setLetterOpen] = useState(false)
+type CannonBit = {
+  side: 'left' | 'right'
+  delay: string
+  duration: string
+  kind: number
+  spread: string
+  lift: string
+  size: string
+}
+
+const cannonBits: CannonBit[] = [
+  ...Array.from({ length: 28 }, (_, i) => ({
+    side: 'left' as const,
+    delay: `${(i % 10) * 0.035}s`,
+    duration: `${1.45 + (i % 7) * 0.12}s`,
+    kind: i % 5,
+    spread: `${16 + ((i * 19) % 56)}vw`,
+    lift: `${12 + ((i * 13) % 30)}vh`,
+    size: `${6 + (i % 7)}px`,
+  })),
+  ...Array.from({ length: 28 }, (_, i) => ({
+    side: 'right' as const,
+    delay: `${(i % 10) * 0.035}s`,
+    duration: `${1.45 + (i % 7) * 0.12}s`,
+    kind: i % 5,
+    spread: `${16 + ((i * 23) % 56)}vw`,
+    lift: `${12 + ((i * 17) % 30)}vh`,
+    size: `${6 + (i % 7)}px`,
+  })),
+]
+
+const nav = [
+  { href: '#aye-legend', label: 'The beginning' },
+  { href: '#aye-eras', label: 'The eras' },
+  { href: '#aye-messages', label: 'The love notes' },
+  { href: '#aye-letter', label: 'The letter' },
+  { href: '#aye-end', label: 'The memories' },
+]
+
+function formatDuration(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return null
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.round(seconds % 60).toString().padStart(2, '0')
+  return `${mins}:${secs}`
+}
+
+function ConfettiCannons({ on }: { on: boolean }) {
+  if (!on) return null
+  return (
+    <div className="aye-confetti" aria-hidden="true">
+      {cannonBits.map((bit, i) => (
+        <i
+          key={`${bit.side}-${i}`}
+          className={`aye-confetti-bit aye-confetti-${bit.kind} aye-cannon-${bit.side}`}
+          style={{
+            '--aye-delay': bit.delay,
+            '--aye-dur': bit.duration,
+            '--aye-spread': bit.spread,
+            '--aye-lift': bit.lift,
+            width: bit.size,
+            height: bit.kind === 1 ? `${parseInt(bit.size, 10) + 8}px` : bit.size,
+          } as CSSProperties}
+        />
+      ))}
+    </div>
+  )
+}
+
+function BowMark() {
+  return (
+    <svg className="aye-bow" viewBox="0 0 36 28" aria-hidden="true">
+      <path d="M18 14 4 6c6-8 14 1 14 8Z" fill="#b76d85" />
+      <path d="M18 14 32 6c-6-8-14 1-14 8Z" fill="#efc4d2" />
+      <circle cx="18" cy="15" r="3.2" fill="#ead9a0" />
+    </svg>
+  )
+}
+
+function SparkMark() {
+  return (
+    <svg className="aye-spark" viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M24 2 27 19 44 24 27 29 24 46 21 29 4 24 21 19Z" fill="currentColor" />
+    </svg>
+  )
+}
+
+function CakeMark({ blown }: { blown: boolean }) {
+  return (
+    <svg className={`aye-cake ${blown ? 'is-blown' : ''}`} viewBox="0 0 240 320" aria-hidden="true">
+      <defs>
+        <linearGradient id="aye-cake-cream" x1="0" x2="1" y1="0" y2="1">
+          <stop stopColor="#fffdf8" />
+          <stop offset=".68" stopColor="#f7ece0" />
+          <stop offset="1" stopColor="#e5cbbd" />
+        </linearGradient>
+        <linearGradient id="aye-cake-pink" x1="0" x2="1" y1="0" y2="1">
+          <stop stopColor="#f6d5dc" />
+          <stop offset=".62" stopColor="#e8b3c1" />
+          <stop offset="1" stopColor="#cb8799" />
+        </linearGradient>
+        <linearGradient id="aye-cake-sage" x1="0" x2="1" y1="0" y2="1">
+          <stop stopColor="#dce3ce" />
+          <stop offset=".7" stopColor="#c5d2b8" />
+          <stop offset="1" stopColor="#a0b08e" />
+        </linearGradient>
+      </defs>
+      <ellipse cx="120" cy="287" rx="91" ry="13" fill="#5a3b42" opacity=".12" />
+      {[82, 107, 132, 157].map((x, i) => (
+        <g key={x}>
+          <rect x={x} y="48" width="6" height="42" rx="3" fill={['#d99bab', '#e6c982', '#a9b99e', '#d99bab'][i]} />
+          <path d={`M${x + 1} 58h4`} stroke="#fff8ed" strokeWidth="1.5" opacity=".8" />
+          <path className={`aye-flame ${blown ? 'is-out' : ''}`} d={`M${x + 3} 45c-11-8 1-19 3-26 8 11 9 20-3 26Z`} fill="#f4c66b" stroke="#e89a68" strokeWidth="1.5" />
+          <ellipse className={`aye-flame-core ${blown ? 'is-out' : ''}`} cx={x + 3} cy="42" rx="2" ry="3.5" fill="#fff0bb" />
+          {blown && <ellipse className="aye-smoke" cx={x + 3} cy="27" rx="4" ry="8" fill="#d8cfc6" />}
+        </g>
+      ))}
+      <path d="M63 111c0-19 114-19 114 0v39H63Z" fill="url(#aye-cake-cream)" stroke="#d9b9a9" strokeWidth="2" />
+      <path d="M63 111c0-19 114-19 114 0 0 10-12 13-19 5-7 15-20 14-25 2-9 14-21 13-27 1-10 13-23 12-28 1-7 9-15 7-15-9Z" fill="url(#aye-cake-pink)" stroke="#d9b9a9" strokeWidth="1.6" />
+      <path d="M45 158c0-18 150-18 150 0v77H45Z" fill="url(#aye-cake-cream)" stroke="#d9b9a9" strokeWidth="2" />
+      <path d="M45 158c0-18 150-18 150 0 0 11-12 14-20 5-8 16-23 15-28 2-10 16-24 15-31 2-10 14-24 13-31 1-9 11-21 7-21-10Z" fill="url(#aye-cake-sage)" stroke="#d9b9a9" strokeWidth="1.6" />
+      <path d="M45 235h150v14c0 14-150 14-150 0Z" fill="url(#aye-cake-pink)" stroke="#d9b9a9" strokeWidth="2" />
+      <path d="M70 172c8-5 13-5 20 0m59 0c8-5 13-5 20 0" fill="none" stroke="#fff8ef" strokeWidth="2" strokeLinecap="round" />
+      {[67, 91, 115, 139, 163, 183].map((x, i) => <circle key={x} cx={x} cy={i % 2 ? 222 : 218} r="2.5" fill={i % 2 ? '#d99bab' : '#dfc786'} />)}
+      {[76, 100, 124, 148, 172].map(x => <circle key={x} cx={x} cy="131" r="2.2" fill="#fff8ef" opacity=".9" />)}
+      <path d="M55 194c18 8 34 8 50 0m30 0c17 8 33 8 50 0" fill="none" stroke="#fffdf7" strokeWidth="2" strokeLinecap="round" opacity=".55" />
+      <path d="M89 270c13-12 25-12 31 0 7-12 20-12 31 0" fill="none" stroke="#fff9ef" strokeWidth="4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function GiftMark({ open = false }: { open?: boolean }) {
+  return (
+    <svg className={`aye-gift-art ${open ? 'is-open' : ''}`} viewBox="0 0 140 120" aria-hidden="true">
+      <path d="M20 35 70 12l50 23-5 68-45 12-45-12Z" fill="#f9eee0" stroke="#b9947f" strokeWidth="1.6" />
+      <path d="m25 39 45 21 45-21M70 60v50" fill="none" stroke="#d4b19d" strokeWidth="1.3" />
+      <path d="m25 39 45 21 45-21" fill="#fff8ef" stroke="#b9947f" strokeWidth="1.4" />
+      <path d="M69 59c-12-19-30-15-26-5 3 8 18 8 27 5Zm2 0c12-19 30-15 26-5-3 8-18 8-27 5Z" fill="#ba7686" stroke="#9e5e70" strokeWidth="1.4" />
+      <path d="M69 61 58 90l12 8 1-37 2 37 12-8-12-29" fill="#d8b768" stroke="#b89a57" strokeWidth="1.2" />
+      <g className="aye-gift-lid">
+        <path d="M25 39 70 19l45 20-45 21Z" fill="#fff8ef" stroke="#b9947f" strokeWidth="1.4" />
+      </g>
+      <circle cx="70" cy="60" r="8" fill="#8c4859" stroke="#f3dfc9" strokeWidth="2" />
+      <path d="m70 55 1.5 3.2 3.5.4-2.5 2.4.6 3.4-3.1-1.7-3.1 1.7.6-3.4-2.5-2.4 3.5-.4Z" fill="#f4dfb0" />
+    </svg>
+  )
+}
+
+function MedalMark() {
+  return (
+    <svg className="aye-medal" viewBox="0 0 180 210" aria-hidden="true">
+      <path d="M54 8 90 82 18 56Z" fill="#b76d85" />
+      <path d="M126 8 90 82 162 56Z" fill="#ead9a0" />
+      <circle cx="90" cy="128" r="58" fill="#fff9f3" stroke="#2b1622" strokeWidth="3" />
+      <circle cx="90" cy="128" r="44" fill="none" stroke="#b76d85" strokeWidth="2.2" />
+      <path d="M90 102c9 0 16 7 16 16 0 18-16 32-16 32s-16-14-16-32c0-9 7-16 16-16Z" fill="#b76d85" />
+    </svg>
+  )
+}
+
+function SealMark() {
+  return (
+    <svg className="aye-seal" viewBox="0 0 72 72" aria-hidden="true">
+      <circle cx="36" cy="36" r="34" fill="#7a3048" />
+      <circle cx="36" cy="36" r="26" fill="none" stroke="#ead9a0" strokeWidth="1.6" />
+      <path d="M36 22c6 0 10 5 10 11 0 12-10 21-10 21s-10-9-10-21c0-6 4-11 10-11Z" fill="#ead9a0" />
+    </svg>
+  )
+}
+
+function VoiceCard({ note }: { note: VoiceNote }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const [playing, setPlaying] = useState(false)
-  const [audioIndex, setAudioIndex] = useState(0)
-  const [photoOpen, setPhotoOpen] = useState<number | null>(null)
+  const [progress, setProgress] = useState(0)
+  const [duration, setDuration] = useState(note.durationLabel)
+  const hasAudio = Boolean(note.audioSrc)
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setConfetti(false), 2400)
-    return () => window.clearTimeout(timer)
+    const audio = audioRef.current
+    if (!audio) return
+    const onTime = () => setProgress(audio.duration ? audio.currentTime / audio.duration : 0)
+    const onEnded = () => { setPlaying(false); setProgress(0) }
+    const onMeta = () => {
+      const formatted = formatDuration(audio.duration)
+      if (formatted) setDuration(formatted)
+    }
+    audio.addEventListener('timeupdate', onTime)
+    audio.addEventListener('ended', onEnded)
+    audio.addEventListener('loadedmetadata', onMeta)
+    return () => {
+      audio.removeEventListener('timeupdate', onTime)
+      audio.removeEventListener('ended', onEnded)
+      audio.removeEventListener('loadedmetadata', onMeta)
+    }
   }, [])
 
-  const enterEras = () => {
-    setEntered(true)
-    setConfetti(true)
-    window.setTimeout(() => setConfetti(false), 2200)
-    window.setTimeout(() => document.getElementById('aye-intro')?.scrollIntoView({ behavior: 'smooth' }), 120)
+  const toggle = () => {
+    const audio = audioRef.current
+    if (!audio || !hasAudio) return
+    if (playing) {
+      audio.pause()
+      setPlaying(false)
+    } else {
+      void audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false))
+    }
   }
 
-  return <main className="all-your-eras" id="aye-top">
-    <ConfettiBurst on={confetti} />
-    <div className="aye-grain" aria-hidden="true" />
-    <nav className="aye-nav"><a className="aye-wordmark" href="#aye-top"><span className="wordmark-star">✳</span> ALL YOUR ERAS <span className="wordmark-year">BIRTHDAY EDITION</span></a><div className="aye-nav-right"><button className="soundtrack-toggle" onClick={() => setPlaying(v => !v)} aria-label={playing ? 'Pause soundtrack' : 'Play soundtrack'}>{playing ? <Pause size={14} /> : <Play size={14} />} <span>{playing ? 'PAUSE THE VIBE' : 'PLAY THE VIBE'}</span><AudioLines size={15} /></button><a href="#aye-people" className="aye-nav-link">THE FAN CLUB <Heart size={14} /></a></div></nav>
-
-    <section className={`aye-hero ${entered ? 'aye-hero-entered' : ''}`} aria-labelledby="aye-hero-title">
-      <div className="hero-confetti-word hero-confetti-one">YAY YOU!</div><div className="hero-confetti-word hero-confetti-two">BIRTHDAY BEHAVIOUR ✦</div>
-      <span className="hero-scribble scribble-a">✳</span><span className="hero-scribble scribble-b">♡</span><span className="hero-scribble scribble-c">✦</span>
-      <div className="hero-top-sticker"><Cake size={16} /> OFFICIALLY A BIG DEAL</div>
-      <div className="hero-title-wrap"><p className="aye-pretitle">IT'S THAT TIME OF THE YEAR AGAIN</p><h1 id="aye-hero-title">HAPPY<br /><span className="hero-happy-word">BIRTHDAY</span><span className="hero-exclaim">!!!</span></h1><div className="hero-name-sticker">[ THEIR NAME ] <span>★</span></div></div>
-      <div className="hero-bottom-row"><div className="hero-intro-note"><span className="note-arrow">↘</span><p>Another trip around the sun and somehow you’re still everyone’s favourite plotline. This tiny corner of the internet? <strong>It’s all about you, baby.</strong></p></div><div className="hero-visual"><div className="hero-photo-frame"><img src="https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=800&q=85" alt="Colourful birthday celebration"/><span className="photo-tape"/><span className="hero-photo-caption">THE BIRTHDAY HUMAN</span></div><div className="hero-cake-sticker">🎂<span>100%<br/>ICONIC</span></div></div></div>
-      <button className="enter-eras-button" onClick={enterEras}><span>ENTER YOUR ERAS</span><ArrowDown size={19} /></button><p className="hero-footnote">SCROLL FOR THE LORE · STAY FOR THE FEELINGS</p>
-    </section>
-
-    <section className="aye-intro section-pad" id="aye-intro"><div className="section-kicker"><span>01 / THE HUMAN</span><span className="kicker-doodle">✳ NOT JUST A BIRTHDAY ICON</span></div><div className="intro-layout"><div className="intro-heading"><p className="handwritten">first things first…</p><h2>So, who <span>is</span><br/>this legend?</h2><p className="intro-blurb">A very unofficial field guide to one very specific, very loved human.</p><div className="intro-sticker">RARE FIND<br/><strong>1 OF 1</strong></div></div><div className="intro-profile"><div className="profile-photo-wrap"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=85" alt="Portrait placeholder for the birthday person"/><span className="profile-photo-tag">[ THEIR NAME ]</span></div><div className="profile-caption">← main character energy, documented</div></div><div className="intro-facts"><div className="fact-row"><span className="fact-emoji">🧠</span><div><small>OPERATING SYSTEM</small><strong>70% big feelings, 30% chaos</strong></div></div><div className="fact-row"><span className="fact-emoji">💬</span><div><small>KNOWN FOR SAYING</small><strong>“Wait, I have a story.”</strong></div></div><div className="fact-row"><span className="fact-emoji">💖</span><div><small>UNFAIRLY GOOD AT</small><strong>Making people feel at home</strong></div></div><div className="fact-row"><span className="fact-emoji">⚠️</span><div><small>PLEASE DO NOT</small><strong>Let them choose the playlist</strong></div></div><div className="profile-micro-note">* Details subject to affectionate exaggeration.</div></div></div></section>
-
-    <section className="aye-eras section-pad" id="aye-eras"><div className="section-kicker"><span>02 / THE LORE</span><span className="kicker-doodle">A TIMELINE OF ABSOLUTE CINEMA ↘</span></div><div className="eras-heading"><h2>All your <span>eras.</span></h2><p>Every version of you got us here.<br/>We love the whole collection.</p><span className="eras-sticker">THE LORE<br/>IS LORE-ING</span></div><div className="eras-list">{eras.map((era, i) => <article className={`era-card era-${era.color}`} key={era.number}><div className="era-number">{era.number}<span> / 05</span></div><div className="era-copy"><p className="era-year">{era.year}</p><h3>{era.title}</h3><p className="era-subtitle">{era.subtitle}</p><p className="era-description">{era.copy}</p><span className="era-chip">✦ {era.sticker}</span></div><div className="era-image-wrap"><img src={era.image} alt={`${era.title} era photo placeholder`} loading="lazy"/><span className="era-image-label">ERA {era.number}</span><span className="era-image-doodle">✳</span></div><div className="era-side-note">{i === 0 ? 'the beginning' : i === 4 ? 'to be continued' : 'character development'}</div></article>)}</div><div className="eras-end-note"><span>↗</span> AND SOMEHOW, YOU'RE ONLY GETTING STARTED.</div></section>
-
-    <section className="aye-awards section-pad" id="aye-awards"><div className="section-kicker"><span>03 / THE CEREMONY</span><span className="kicker-doodle">VERY REAL. VERY OFFICIAL.</span></div><div className="awards-layout"><div className="awards-intro"><p className="handwritten">and the award goes to…</p><h2>The people’s<br/><span>favourite.</span></h2><p>After extensive research (the group chat), the jury has reached a completely unbiased conclusion.</p><button className="award-button" onClick={() => setAwardRevealed(v => !v)}>{awardRevealed ? 'REVOKE THE HONOUR' : 'REVEAL THE AWARD'} <Sparkles size={16}/></button></div><div className={`award-certificate ${awardRevealed ? 'award-certificate-revealed' : ''}`}><div className="award-ribbon">WINNER<br/>WINNER</div><span className="award-stars">✦ ✳ ✦</span><p className="award-small">THE TOTALLY UNBIASED AWARDS PRESENT</p><div className="award-trophy">🏆</div><h3>{awardRevealed ? 'MOST LIKELY TO MAKE EVERYTHING BETTER' : 'AND THE WINNER IS…'}</h3><p className="award-to">{awardRevealed ? '[ THEIR NAME ], OBVIOUSLY.' : 'tap to reveal the official verdict'}</p><span className="award-signature">the people have spoken ✍</span></div></div></section>
-
-    <section className="aye-people section-pad" id="aye-people"><div className="section-kicker"><span>04 / THE FAN CLUB</span><span className="kicker-doodle">A LOT OF PEOPLE ARE VERY INTO YOU</span></div><div className="people-heading"><h2>Look who’s<br/><span>obsessed with you.</span></h2><p>Some words from your personal fan club.<br/>They insisted. We let them.</p><span className="people-heart">♡</span></div><div className="notes-grid">{notes.map((note, i) => <article className={`love-note ${note.color} ${openedNotes.includes(i) ? 'love-note-open' : ''}`} key={note.name}><div className="note-top"><span className="note-stamp">FOR YOUR EYES ONLY</span><span className="note-heart">♡</span></div><p className="note-name">{note.name}</p><p className="note-relation">{note.relation}</p><p className="note-message">{openedNotes.includes(i) ? note.message : `${note.message.slice(0, 72)}…`}</p><button className="note-open-button" onClick={() => setOpenedNotes(prev => prev.includes(i) ? prev.filter(n => n !== i) : [...prev, i])}>{openedNotes.includes(i) ? 'FOLD IT BACK ↑' : 'READ THE REST ↗'}</button><span className="note-number">0{i + 1}</span></article>)}</div><p className="notes-footnote">* Demo messages for the template. Swap these for real words from your people.</p></section>
-
-    <section className="aye-camera section-pad" id="aye-camera"><div className="section-kicker"><span>05 / CAMERA ROLL</span><span className="kicker-doodle">NO CONTEXT. ALL FEELINGS.</span></div><div className="camera-heading"><div><p className="handwritten">the evidence folder</p><h2>Life lately,<br/><span>and always.</span></h2></div><div className="camera-side-note"><Camera size={22}/><span>6 photos that<br/>explain everything.</span></div></div><div className="camera-roll">{photos.map((photo, i) => <button className={`polaroid polaroid-${i + 1}`} key={photo.src} style={{ '--tilt': photo.tilt } as CSSProperties} onClick={() => setPhotoOpen(i)} aria-label={`Open photo: ${photo.caption}`}><span className="polaroid-photo"><img src={photo.src} alt={photo.caption} loading="lazy"/><span className="polaroid-flash">✦</span></span><span className="polaroid-caption">{photo.caption}</span><span className="polaroid-index">ROLL #{String(i + 1).padStart(2, '0')}</span></button>)}</div><div className="camera-footer"><span>THE CAMERA ROLL NEVER LIES.</span><span>OR AT LEAST, IT HAS RECEIPTS. ↗</span></div></section>
-
-    <section className="aye-secret section-pad" id="aye-secret"><div className="secret-card"><span className="secret-spark secret-spark-a">✳</span><span className="secret-spark secret-spark-b">✦</span><div className="secret-lock-icon"><LockKeyhole size={27}/></div><p className="secret-kicker">ONE LAST LITTLE THING</p><h2>psst… there’s<br/>more <span>love</span> inside.</h2><p className="secret-copy">You thought we were done? Please. We have one very important thing left to say.</p><button className="secret-button" onClick={() => { setSecretUnlocked(true); setLetterOpen(true) }}>{secretUnlocked ? 'THE SECRET IS YOURS ♡' : 'UNLOCK YOUR SURPRISE'} <LockKeyhole size={16}/></button><span className="secret-bottom-note">HIGHLY CLASSIFIED AFFECTION.</span></div></section>
-
-    <section className="aye-letter section-pad" id="aye-letter"><div className="section-kicker"><span>06 / FROM THE HEART</span><span className="kicker-doodle">PLEASE READ WITH YOUR WHOLE HEART</span></div><div className={`letter-envelope ${letterOpen ? 'letter-envelope-open' : ''}`}><div className="letter-envelope-back"><div className="letter-paper"><p className="letter-date">A NOTE FOR YOUR BIRTHDAY</p><h2>Hey, you.</h2><p>There are a thousand things we could say about you, and somehow none of them feel like quite enough.</p><p>We hope this next year gives you the kind of happiness that sneaks up on you in ordinary moments. The belly laughs. The people who make you feel safe. The plans that work out even better than you imagined. The little reminders that you are doing better than you think.</p><p>Thank you for being exactly the person you are — for the light you bring into rooms, the love you give so freely, and the million small things you probably don't even realise people notice.</p><p>We are so glad the universe made you. Here's to every version of you that got you here, and every version you have yet to become.</p><p className="letter-signoff">All our love, always. <span>♡</span></p><span className="letter-placeholder">[ PERSONALISE THIS LETTER ]</span></div></div><button className="envelope-flap" onClick={() => setLetterOpen(v => !v)} aria-label={letterOpen ? 'Close letter' : 'Open letter'}><span>{letterOpen ? 'CLOSE LETTER ↑' : 'OPEN THE LETTER ♡'}</span></button></div><p className="letter-instruction">{letterOpen ? 'Take your time. This bit is for you.' : 'Click the envelope when you’re ready.'}</p></section>
-
-    <section className="aye-voice section-pad" id="aye-voice"><div className="voice-party-confetti" aria-hidden="true">✳　♡　✦　✳　♡　✦</div><div className="section-kicker"><span>07 / PRESS PLAY</span><span className="kicker-doodle">THE SOFT BIT. YOU MADE IT.</span></div><div className="voice-heading"><p className="handwritten">one last thing…</p><h2>Some things<br/>sound better <span>out loud.</span></h2><p>Little voice notes from people who love you. Keep them forever, okay?</p></div><div className="voice-player"><div className="voice-record"><AudioLines size={32}/><span className="record-dot"/></div><div className="voice-player-main"><div className="voice-player-top"><div><p className="voice-from">{['A message from Riya', 'A message from your favourite human', 'A message from home'][audioIndex]}</p><p className="voice-caption">{['“I hope you know how loved you are.”', '“Okay, I’m not crying. You are.”', '“We are so proud of you.”'][audioIndex]}</p></div><span className="voice-duration">0:0{[18, 24, 31][audioIndex]}</span></div><div className="voice-progress"><span style={{ width: playing ? '58%' : '12%' }}/></div><div className="voice-controls"><button onClick={() => setAudioIndex(v => (v + 2) % 3)} aria-label="Previous voice note"><ArrowLeft size={16}/></button><button className="voice-play" onClick={() => setPlaying(v => !v)} aria-label={playing ? 'Pause voice note demo' : 'Play voice note demo'}>{playing ? <Pause size={18}/> : <Play size={18}/>}</button><button onClick={() => setAudioIndex(v => (v + 1) % 3)} aria-label="Next voice note"><ArrowRight size={16}/></button><span className="voice-demo-label">DEMO PLAYER · ADD REAL AUDIO WHEN PERSONALISING</span><Volume2 size={17}/></div></div></div><p className="voice-disclaimer">This is a visual demo player. Add actual recordings to make this moment yours.</p><div className="voice-end-note"><span>YOU ARE SO, SO LOVED.</span><span className="voice-end-heart">♡</span><span>HAPPY BIRTHDAY, YOU LEGEND.</span></div></section>
-
-    <footer className="aye-footer"><a href="#aye-top" className="footer-back-top">BACK TO THE TOP ↑</a><p className="footer-big-type">THE END?<br/><span>NEVER.</span></p><p className="footer-note">A little corner of the internet, made with an unreasonable amount of love.</p><div className="footer-bottom-row"><span>ALL YOUR ERAS · BIRTHDAY EDITION</span><span>MADE FOR [ THEIR NAME ] ♡</span><a href="#aye-top">REPLAY THE PARTY ↗</a></div></footer>
-
-    {photoOpen !== null && <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" onClick={() => setPhotoOpen(null)}><button className="lightbox-close" onClick={() => setPhotoOpen(null)} aria-label="Close photo"><X size={24}/></button><div className="lightbox-photo" onClick={e => e.stopPropagation()}><img src={photos[photoOpen].src} alt={photos[photoOpen].caption}/><p>{photos[photoOpen].caption}</p><div className="lightbox-controls"><button onClick={() => setPhotoOpen(v => v === null ? null : (v + photos.length - 1) % photos.length)}><ArrowLeft size={18}/> PREVIOUS</button><span>{String(photoOpen + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}</span><button onClick={() => setPhotoOpen(v => v === null ? null : (v + 1) % photos.length)}>NEXT <ArrowRight size={18}/></button></div></div></div>}
-    <button className="back-to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Back to top"><ChevronDown size={18}/></button>
-  </main>
+  return (
+    <article className="aye-voice-card">
+      <img src={note.image} alt="" className="aye-voice-avatar" />
+      <div>
+        <p className="aye-kicker">{note.sender}</p>
+        <p className="aye-voice-caption">{note.caption}</p>
+        {hasAudio && <audio ref={audioRef} src={note.audioSrc} preload="metadata" />}
+        <div className="aye-voice-wave" aria-hidden="true">
+          {Array.from({ length: 16 }, (_, i) => (
+            <b key={i} className={playing ? 'is-playing' : ''} style={{ '--aye-h': `${7 + ((i * 9) % 18)}px` } as CSSProperties} />
+          ))}
+        </div>
+        <div className="aye-voice-progress" aria-hidden="true">
+          <span style={{ width: `${hasAudio ? progress * 100 : 18}%` }} />
+        </div>
+        <div className="aye-voice-row">
+          <button
+            type="button"
+            onClick={toggle}
+            disabled={!hasAudio}
+            aria-label={hasAudio ? (playing ? `Pause voice note from ${note.sender}` : `Play voice note from ${note.sender}`) : `Sample voice note from ${note.sender}, audio not added yet`}
+          >
+            {playing ? <Pause size={15} /> : <Play size={15} />}
+            {hasAudio ? (playing ? 'Pause' : 'Listen') : 'Awaiting audio'}
+          </button>
+          <span>{duration}</span>
+        </div>
+      </div>
+    </article>
+  )
 }
 
-export default AllYourEras
+export default function AllYourEras() {
+  const data = birthdayData
+  const [confetti, setConfetti] = useState(false)
+  const [stuck, setStuck] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [awardOpen, setAwardOpen] = useState(false)
+  const [letterOpen, setLetterOpen] = useState(false)
+  const [openNote, setOpenNote] = useState<string | null>(data.messages[0]?.id ?? null)
+  const [secret, setSecret] = useState(false)
+  const [stickerPeeled, setStickerPeeled] = useState(false)
+  const [stickerPeeling, setStickerPeeling] = useState(false)
+  const [mainPhotoFlipped, setMainPhotoFlipped] = useState(false)
+  const [topRightPhotoFlipped, setTopRightPhotoFlipped] = useState(false)
+  const [bottomRightPhotoFlipped, setBottomRightPhotoFlipped] = useState(false)
+  const [blown, setBlown] = useState(false)
+  const [giftOpen, setGiftOpen] = useState(false)
+  const [wish, setWish] = useState(false)
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
+  const endBurstDone = useRef(false)
+  const confettiTimer = useRef(0)
+  const letterCloseRef = useRef<HTMLButtonElement>(null)
+  const lightboxCloseRef = useRef<HTMLButtonElement>(null)
+  const giftCloseRef = useRef<HTMLButtonElement>(null)
+  const stickerTimer = useRef(0)
+  const stickerInteractionStarted = useRef(false)
+  const photoFlipSequenceStarted = useRef(false)
+  const photoFlipTimers = useRef<number[]>([])
+  const stickerPointerStart = useRef<{ x: number; y: number } | null>(null)
+
+  const burstConfetti = () => {
+    if (prefersReducedMotion()) return
+    window.clearTimeout(confettiTimer.current)
+    setConfetti(false)
+    window.requestAnimationFrame(() => {
+      setConfetti(true)
+      confettiTimer.current = window.setTimeout(() => setConfetti(false), 2300)
+    })
+  }
+
+  const scrollTo = (id: string) => {
+    setMenuOpen(false)
+    document.getElementById(id)?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+  }
+
+  const startParty = () => {
+    burstConfetti()
+    scrollTo('aye-legend')
+  }
+
+  const revealAward = () => {
+    setAwardOpen(true)
+    burstConfetti()
+  }
+
+  const onLetterKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      setLetterOpen(true)
+    }
+  }
+
+  useEffect(() => {
+    document.title = `All Your Eras — Happy Birthday ${data.name}`
+    const nodes = document.querySelectorAll('.aye-in')
+    if (prefersReducedMotion()) {
+      nodes.forEach(node => node.classList.add('is-in'))
+      return
+    }
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return
+        entry.target.classList.add('is-in')
+        if (entry.target.id === 'aye-end' && !endBurstDone.current) {
+          endBurstDone.current = true
+          burstConfetti()
+        }
+      })
+    }, { threshold: 0.16 })
+    nodes.forEach(node => observer.observe(node))
+    return () => observer.disconnect()
+  }, [data.name])
+
+  useEffect(() => {
+    if (prefersReducedMotion() || openingBurstDone) return
+    const start = window.setTimeout(() => {
+      openingBurstDone = true
+      burstConfetti()
+    }, 80)
+    return () => {
+      window.clearTimeout(start)
+      window.clearTimeout(confettiTimer.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    const onScroll = () => setStuck(window.scrollY > 28)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    const overlayOpen = letterOpen || Boolean(lightbox) || menuOpen || giftOpen
+    document.body.style.overflow = overlayOpen ? 'hidden' : ''
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setLetterOpen(false)
+      setLightbox(null)
+      setMenuOpen(false)
+      setGiftOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [letterOpen, lightbox, menuOpen, giftOpen])
+
+  useEffect(() => {
+    const reduced = prefersReducedMotion()
+    const show = window.setTimeout(() => setWish(true), reduced ? 0 : 2400)
+    const hide = reduced ? 0 : window.setTimeout(() => setWish(false), 14000)
+    return () => {
+      window.clearTimeout(show)
+      if (hide) window.clearTimeout(hide)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (letterOpen) {
+      burstConfetti()
+      letterCloseRef.current?.focus()
+    }
+  }, [letterOpen])
+
+  useEffect(() => {
+    if (lightbox) lightboxCloseRef.current?.focus()
+  }, [lightbox])
+
+  useEffect(() => {
+    if (giftOpen) giftCloseRef.current?.focus()
+  }, [giftOpen])
+
+  useEffect(() => () => {
+    window.clearTimeout(stickerTimer.current)
+    photoFlipTimers.current.forEach(timer => window.clearTimeout(timer))
+  }, [])
+
+  const startPhotoFlipSequence = () => {
+    if (photoFlipSequenceStarted.current) return
+    photoFlipSequenceStarted.current = true
+
+    const flipDuration = prefersReducedMotion() ? 0 : 720
+    const pause = prefersReducedMotion() ? 350 : 400
+    const schedule = (callback: () => void, delay: number) => {
+      photoFlipTimers.current.push(window.setTimeout(callback, delay))
+    }
+
+    schedule(() => {
+      setMainPhotoFlipped(true)
+      schedule(() => {
+        setTopRightPhotoFlipped(true)
+        schedule(() => setBottomRightPhotoFlipped(true), flipDuration + pause)
+      }, flipDuration + pause)
+    }, 0)
+  }
+
+  const peelSticker = () => {
+    if (stickerInteractionStarted.current || stickerPeeled || stickerPeeling) return
+    stickerInteractionStarted.current = true
+    if (prefersReducedMotion()) {
+      setStickerPeeled(true)
+      startPhotoFlipSequence()
+      return
+    }
+    setStickerPeeling(true)
+    stickerTimer.current = window.setTimeout(() => {
+      setStickerPeeled(true)
+      setStickerPeeling(false)
+      startPhotoFlipSequence()
+    }, 520)
+  }
+
+  const renderCollagePhoto = (
+    index: number,
+    className: string,
+    flipped: boolean,
+    isMain = false,
+  ) => {
+    const original = data.collageFront[index]
+    const alternate = data.collageBack[index]
+    const activePhoto = flipped ? alternate : original
+
+    return (
+      <figure className={`aye-profile-photo ${className}`} key={original.src}>
+        <div className="aye-profile-photo-control">
+          <span className={`aye-profile-photo-turn ${flipped ? 'is-flipped' : ''}`}>
+            <span className="aye-profile-photo-face aye-profile-photo-front" aria-hidden={flipped}>
+              <img src={original.src} alt={original.alt} loading={isMain ? 'eager' : 'lazy'} />
+            </span>
+            <span className="aye-profile-photo-face aye-profile-photo-back" aria-hidden={!flipped}>
+              <img src={alternate.src} alt={alternate.alt} loading="lazy" />
+            </span>
+          </span>
+        </div>
+        {activePhoto.caption && <figcaption>{activePhoto.caption}</figcaption>}
+        {isMain && !stickerPeeled && (
+          <button
+            type="button"
+            className={`aye-peel-sticker ${stickerPeeling ? 'is-peeling' : ''}`}
+            onPointerDown={event => {
+              stickerPointerStart.current = { x: event.clientX, y: event.clientY }
+              event.currentTarget.setPointerCapture(event.pointerId)
+            }}
+            onPointerUp={event => {
+              const start = stickerPointerStart.current
+              if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 9) peelSticker()
+              stickerPointerStart.current = null
+            }}
+            onPointerCancel={() => { stickerPointerStart.current = null }}
+            onClick={peelSticker}
+            aria-busy={stickerPeeling}
+            aria-label="Peel this sticker to reveal alternate photographs"
+          >
+            <span>peel this</span>
+            <i aria-hidden="true" />
+          </button>
+        )}
+      </figure>
+    )
+  }
+
+  return (
+    <main className="all-your-eras">
+      <ConfettiCannons on={confetti} />
+      <a className="aye-skip" href="#aye-legend">Skip to the story</a>
+
+      <header className={`aye-header ${stuck ? 'is-stuck' : ''} ${menuOpen ? 'is-open' : ''}`}>
+        <a className="aye-wordmark" href="#aye-top" onClick={event => { event.preventDefault(); scrollTo('aye-top') }}>
+          All your <em>Eras</em>
+        </a>
+        <span className="aye-header-mark" aria-hidden="true"><BowMark /></span>
+        <button className="aye-menu" type="button" aria-expanded={menuOpen} aria-controls="aye-nav" aria-label={menuOpen ? 'Close menu' : 'Open menu'} onClick={() => setMenuOpen(v => !v)}>
+          {menuOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+        <nav id="aye-nav" className={menuOpen ? 'is-open' : ''} aria-label="Birthday sections">
+          {nav.map(item => (
+            <a key={item.href} href={item.href} onClick={event => { event.preventDefault(); scrollTo(item.href.slice(1)) }}>{item.label}</a>
+          ))}
+          <button type="button" className="aye-header-cta" onClick={() => { setMenuOpen(false); startParty() }}>Make a wish</button>
+        </nav>
+      </header>
+
+      <section className="aye-hero" id="aye-top" aria-labelledby="aye-hero-title">
+        <div className="aye-hero-copy">
+          <p className="aye-kicker">
+            <button type="button" className="aye-spark-hit" onClick={burstConfetti} aria-label="A little extra sparkle">
+              <SparkMark />
+            </button>
+            A little internet birthday
+          </p>
+          <h1 id="aye-hero-title">Happy <em>birthday</em>, {data.name}.</h1>
+          <p className="aye-lede">Make a wish. Then wander through every era that made you this version of yourself.</p>
+          <button className="aye-btn" type="button" onClick={startParty}>Enter the celebration</button>
+        </div>
+        <div className="aye-wish-bridge">
+          {wish && (
+            <aside className="aye-wish-note" role="status">
+              <span className="aye-wish-seal" aria-hidden="true"><SealMark /></span>
+              <p>A little wish, just in: happy birthday, {data.nickname}.</p>
+              <button type="button" onClick={() => setWish(false)}>Got it</button>
+            </aside>
+          )}
+        </div>
+        <div className="aye-hero-stage">
+          <div className="aye-hero-keepsakes">
+            <p className="aye-hand aye-hero-note">for {data.nickname}, obviously.</p>
+            <button
+              type="button"
+              className={`aye-cake-hit ${blown ? 'is-blown' : ''}`}
+              onClick={() => {
+                if (blown) {
+                  burstConfetti()
+                  return
+                }
+                setBlown(true)
+                burstConfetti()
+              }}
+              aria-pressed={blown}
+              aria-label={blown ? 'Candles blown out. Celebrate again' : 'Blow out the candles'}
+            >
+              <CakeMark blown={blown} />
+              <span>{blown ? 'Wish granted' : 'Blow out the candles'}</span>
+            </button>
+            <button
+              type="button"
+              className={`aye-gift ${giftOpen ? 'is-open' : ''}`}
+              onClick={() => {
+                setGiftOpen(true)
+                burstConfetti()
+              }}
+              aria-haspopup="dialog"
+              aria-expanded={giftOpen}
+            >
+              <GiftMark open={giftOpen} />
+              <span>A little something for you</span>
+            </button>
+          </div>
+          <figure className="aye-hero-polaroid">
+            <button type="button" onClick={() => setLightbox({ src: data.heroImage || '', alt: data.name })}>
+              <img src={data.heroImage} alt={`Portrait of ${data.name}`} />
+            </button>
+            <figcaption>{data.polaroidCaption}</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section className="aye-legend aye-in" id="aye-legend">
+        <div className="aye-legend-intro">
+          <p className="aye-kicker">01 / The beginning</p>
+          <h2>So, who is this <em>legend</em>?</h2>
+          <p className="aye-lede">{data.introduction}</p>
+          <p className="aye-hand">all the details, kept close</p>
+        </div>
+        <div className="aye-profile">
+          <div className="aye-profile-scene">
+            {renderCollagePhoto(0, 'aye-profile-main', mainPhotoFlipped, true)}
+            {renderCollagePhoto(1, 'aye-profile-side aye-profile-a', topRightPhotoFlipped)}
+            {renderCollagePhoto(2, 'aye-profile-side aye-profile-b', bottomRightPhotoFlipped)}
+          </div>
+        </div>
+        <dl className="aye-facts">
+          <div><dt>Name</dt><dd>{data.name}</dd></div>
+          <div><dt>Birthday</dt><dd>{data.birthday}</dd></div>
+          <div><dt>Nickname</dt><dd>{data.nickname}</dd></div>
+          <div><dt>Favourite things</dt><dd>{data.favouriteThings.join(' · ')}</dd></div>
+        </dl>
+      </section>
+
+      <section className="aye-eras aye-in" id="aye-eras" aria-labelledby="aye-eras-title">
+        <div className="aye-eras-heading">
+          <p className="aye-kicker">02 / The lore</p>
+          <h2 id="aye-eras-title">All your <em>eras</em></h2>
+        </div>
+        {data.eras.map((era, index) => (
+          <article className={`aye-era aye-era-${index}`} key={era.label}>
+            <button type="button" onClick={() => setLightbox({ src: era.image || '', alt: era.label })}>
+              <img src={era.image} alt={`${era.label}: ${era.caption}`} loading="lazy" />
+            </button>
+            <p className="aye-era-label">{era.label}</p>
+            <small>{era.caption}</small>
+          </article>
+        ))}
+        {data.scrapbookExtras.map((extra, index) => (
+          <figure className={`aye-era-extra aye-era-extra-${index + 1}`} key={extra.src} style={{ '--aye-tilt': extra.rotate } as CSSProperties}>
+            <button type="button" onClick={() => setLightbox({ src: extra.src, alt: extra.caption })}>
+              <img src={extra.src} alt={extra.caption} loading="lazy" />
+            </button>
+            <figcaption>{extra.caption}</figcaption>
+          </figure>
+        ))}
+      </section>
+
+      <section className="aye-messages aye-in" id="aye-messages">
+        <div className="aye-messages-intro">
+          <p className="aye-kicker">03 / The fan club</p>
+          <h2>Look who’s <em>obsessed</em> with you</h2>
+          <p className="aye-lede">Notes from the people who have loved every version of you. Unfold the ones you want to keep reading.</p>
+        </div>
+        <div className="aye-notes">
+          {data.messages.map((message, index) => {
+            const open = openNote === message.id
+            return (
+              <article className={`aye-note aye-note-${index} ${open ? 'is-open' : ''}`} key={message.id}>
+                <header>
+                  <img src={message.image} alt="" loading="lazy" />
+                  <div>
+                    <strong>{message.sender}</strong>
+                    <span>{message.relationship}</span>
+                  </div>
+                </header>
+                <p>{open ? message.message : `${message.message.slice(0, 96)}${message.message.length > 96 ? '…' : ''}`}</p>
+                {message.message.length > 96 && (
+                  <button type="button" onClick={() => setOpenNote(open ? null : message.id)}>
+                    {open ? 'Fold the note' : 'Keep reading'}
+                  </button>
+                )}
+              </article>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="aye-award aye-in" id="aye-award">
+        <p className="aye-kicker">04 / The ceremony</p>
+        <h2>And the award goes to… <em>the people’s favourite</em></h2>
+        <p className="aye-lede">After extensive research (the group chat), the jury has reached a completely unbiased conclusion.</p>
+        <div className={`aye-stage ${awardOpen ? 'is-open' : ''}`}>
+          <button type="button" className="aye-medal-hit" onClick={revealAward} aria-expanded={awardOpen} aria-controls="aye-award-copy">
+            <MedalMark />
+            <span>{awardOpen ? 'Celebrate again' : 'Reveal the award'}</span>
+          </button>
+          <div className="aye-stage-copy" id="aye-award-copy" aria-live="polite">
+            {awardOpen ? (
+              <>
+                <p className="aye-kicker">Presented to {data.name}</p>
+                <h3>{data.award.title}</h3>
+                <p>{data.award.explanation}</p>
+              </>
+            ) : (
+              <p className="aye-hand">the envelope, please</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="aye-letter aye-in" id="aye-letter">
+        <div className="aye-letter-copy">
+          <p className="aye-kicker">05 / From the heart</p>
+          <h2>Please read with your <em>whole heart</em></h2>
+          <p className="aye-lede">A letter, kept for this exact day. Open it when you are ready.</p>
+        </div>
+        <button className="aye-envelope" type="button" aria-expanded={letterOpen} aria-controls="aye-letter-paper" onClick={() => setLetterOpen(true)} onKeyDown={onLetterKey}>
+          <span className="aye-envelope-flap" />
+          <span className="aye-envelope-front">
+            <b>To {data.name}</b>
+            <small>Open the letter</small>
+            <SealMark />
+          </span>
+        </button>
+        {letterOpen && (
+          <div className="aye-letter-overlay" role="dialog" aria-modal="true" aria-labelledby="aye-letter-title" onMouseDown={event => { if (event.target === event.currentTarget) setLetterOpen(false) }}>
+            <article className="aye-letter-paper" id="aye-letter-paper">
+              <button className="aye-letter-close" type="button" ref={letterCloseRef} onClick={() => setLetterOpen(false)}>Close</button>
+              <p className="aye-kicker">From the heart</p>
+              <h3 id="aye-letter-title">{data.letter.heading}</h3>
+              {data.letter.content.split('\n\n').map(paragraph => <p key={paragraph.slice(0, 32)}>{paragraph}</p>)}
+              <p className="aye-hand">{data.letter.signature}</p>
+            </article>
+          </div>
+        )}
+      </section>
+
+      <section className="aye-voice aye-in" id="aye-voice">
+        <p className="aye-kicker">06 / One last thing</p>
+        <h2>Some things sound better <em>out loud</em></h2>
+        <p className="aye-lede">Little voice notes from people who love you. Keep them forever, okay?</p>
+        <div className="aye-voice-grid">
+          {data.voiceNotes.map(note => <VoiceCard key={note.id} note={note} />)}
+        </div>
+      </section>
+
+      <section className="aye-end aye-in" id="aye-end">
+        <div className="aye-end-copy">
+          <p className="aye-kicker">07 / The finale</p>
+          <h2>The end? <em>Never.</em></h2>
+          <p className="aye-lede">A little corner of the internet, made with an unreasonable amount of love.</p>
+          <p className="aye-hand">{data.closingNote}</p>
+          <button className="aye-secret" type="button" onClick={() => setSecret(v => !v)}>
+            {secret ? `P.S. ${data.name}, you are the favourite plotline.` : 'A tiny postscript, if you want it'}
+          </button>
+        </div>
+        <div className="aye-end-collage">
+          {data.closingImages.map(image => (
+            <figure key={image.src}>
+              <button type="button" onClick={() => setLightbox({ src: image.src, alt: image.caption })}>
+                <img src={image.src} alt={image.caption} loading="lazy" />
+              </button>
+              <figcaption>{image.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+
+      <footer className="aye-footer">
+        <div className="aye-footer-brand">
+          <a className="aye-wordmark" href="#aye-top" onClick={event => { event.preventDefault(); scrollTo('aye-top') }}>All your <em>Eras</em></a>
+          <BowMark />
+        </div>
+        <p>Made with love, for your favourite human.</p>
+        <nav aria-label="Footer">
+          {nav.map(item => (
+            <a key={item.href} href={item.href} onClick={event => { event.preventDefault(); scrollTo(item.href.slice(1)) }}>{item.label}</a>
+          ))}
+        </nav>
+        <button type="button" onClick={() => scrollTo('aye-top')}>Back to the beginning</button>
+        <small>A little world by Tab & Tale</small>
+      </footer>
+
+      {giftOpen && (
+        <div
+          className="aye-gift-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="aye-gift-title"
+          onMouseDown={event => { if (event.target === event.currentTarget) setGiftOpen(false) }}
+        >
+          <article className="aye-gift-keep">
+            <button className="aye-gift-close" type="button" ref={giftCloseRef} onClick={() => setGiftOpen(false)}>Close</button>
+            <p className="aye-kicker">A little present</p>
+            <figure>
+              <img src="/templates/all-your-eras/party.jpg" alt={`A birthday keepsake for ${data.name}`} />
+              <figcaption>keep this one</figcaption>
+            </figure>
+            <h3 id="aye-gift-title">For {data.nickname}</h3>
+            <p className="aye-hand">Another trip around the sun, {data.name}.</p>
+          </article>
+        </div>
+      )}
+      {lightbox && (
+        <div className="aye-lightbox" role="dialog" aria-modal="true" aria-label={lightbox.alt} onMouseDown={event => { if (event.target === event.currentTarget) setLightbox(null) }}>
+          <button type="button" className="aye-lightbox-close" ref={lightboxCloseRef} onClick={() => setLightbox(null)}>Close</button>
+          <img src={lightbox.src} alt={lightbox.alt} />
+        </div>
+      )}
+    </main>
+  )
+}

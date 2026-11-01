@@ -103,11 +103,12 @@ export default async function handler(request, response) {
     if (question.length < 10) return sendJson(response, 400, { error: 'Please add a little more detail to your question.' })
 
     const submittedAt = new Date().toISOString()
+    const sourceLabel = sourcePage === 'Personal Page' ? 'Personal Page' : 'Professional page'
     await sendEmail({
       to: TO_EMAIL,
       replyTo: email,
       subject: `New website enquiry from ${name}`,
-      text: `New Professional page enquiry\n\nName: ${name}\nEmail: ${email}\nSource page: ${sourcePage}\nSubmitted: ${submittedAt}\n\nQuestion:\n${question}`,
+      text: `New ${sourceLabel} enquiry\n\nName: ${name}\nEmail: ${email}\nSource page: ${sourcePage}\nSubmitted: ${submittedAt}\n\nQuestion:\n${question}`,
     })
 
     try {

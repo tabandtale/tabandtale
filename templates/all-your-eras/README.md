@@ -1,32 +1,25 @@
 # All Your Eras — Birthday Edition
 
-A loud, joyful, maximalist birthday mini-site with confetti, sticker-like labels, a personality field guide, life-era timeline, playful awards, love notes, camera-roll gallery, secret unlock, heartfelt letter and a voice-note finale.
+A magazine-style birthday mini-site based on the supplied birthday design: blush pink, deep charcoal, script and pixel typography, scrapbook collages and celebratory interactions.
 
 ## Preview route
 
-With the Tab & Tale Vite project running, open:
-
 `/templates/all-your-eras`
-
-The template is imported by `src/main.tsx` and uses its own stylesheet at `templates/all-your-eras/styles/all-your-eras.css`.
 
 ## Personalising it
 
-Edit `templates/all-your-eras/src/AllYourEras.tsx`:
+Edit `templates/all-your-eras/src/birthdayData.ts`. That file is the single source of truth for copy, photographs and optional voice-note audio.
 
-- Replace `[ THEIR NAME ]` and all sample copy.
-- Update the `eras` array for the person's actual life stages and stories.
-- Update the `notes` array with real messages and relationships.
-- Replace the `photos` array images and captions with supplied photographs.
-- Replace the sample birthday/personality photos with approved images.
-- Replace the sample letter with a real letter.
-- Connect real supplied voice notes to an audio element before representing them as playable recordings. The current voice-note UI is deliberately demo-only.
-- The soundtrack control is currently a visual interaction; connect a licensed or user-supplied track before launch. Audio is not autoplayed.
+Sample photographs live in `public/templates/all-your-eras/` and are Unsplash-licensed preview images. Replace them with the birthday person's own photos before publishing.
 
-## Design notes
+Voice-note cards are populated as sample cards. Playback stays disabled until you set a real `audioSrc`.
 
-The visual language is intentionally distinct from the Tab & Tale studio website: bright birthday yellow, punchy pink, aqua, lilac, dark ink, oversized type, wonky photo frames, scrapbook notes and playful section treatments. It is responsive and includes reduced-motion support. The initial confetti is brief and can be replayed by pressing **Enter Your Eras**.
+## Interactions
 
-## Assets and rights
-
-Remote Unsplash URLs are placeholders for preview only. Replace them with client-provided images or assets that are appropriately licensed before publishing a personalised site. Do not redistribute commercial music recordings without the necessary rights.
+- Confetti cannons fire once as soon as the page opens
+- The opening CTA fires a second burst and scrolls into the story
+- Photographs tilt, zoom and reveal on scroll
+- The award reveal uncovers the prize with confetti
+- The envelope opens a full letter that can be closed and opened again
+- A gentle confetti burst plays when the ending comes into view
+- All motion respects `prefers-reduced-motion`
